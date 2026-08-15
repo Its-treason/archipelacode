@@ -4,7 +4,7 @@ import * as cp from "child_process";
 import { omit } from "lodash";
 import * as vscode from "vscode";
 import { globalState } from "./globalState";
-import { Endpoint, langExt, VersionIdentifier } from "./shared";
+import { Endpoint, langExt, USER_AGENT, VersionIdentifier } from "./shared";
 
 export async function openUrl(url: string): Promise<void> {
   vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(url));
@@ -14,6 +14,12 @@ export function getLeetCodeEndpoint(): string {
   const archipelacodeConfig: vscode.WorkspaceConfiguration =
     vscode.workspace.getConfiguration("archipelacode");
   return archipelacodeConfig.get<string>("leetCodeEndpoint", Endpoint.LeetCode);
+}
+
+export function getLanguageOverride(): string {
+  const archipelacodeConfig: vscode.WorkspaceConfiguration =
+    vscode.workspace.getConfiguration("archipelacode");
+  return archipelacodeConfig.get<string>("languageOverride", "auto");
 }
 
 export function parseQuery(query: string): { [key: string]: string } {
@@ -56,6 +62,7 @@ export function APAxios<T = any>(
     headers: {
       referer,
       "content-type": "application/json",
+      "user-agent": USER_AGENT,
       cookie,
       ...(settings && settings.headers),
     },
@@ -161,20 +168,6 @@ export async function executeCommandWithProgress(
     },
   );
   return result;
-}
-
-interface KeyValuePairs {
-  [key: string]: string;
-}
-
-export function parseCookie(cookie: string) {
-  let output: KeyValuePairs = {};
-  let strs = cookie.split(";");
-  strs.forEach((str) => {
-    let pair = str.split("=");
-    output[pair[0]] = pair[1];
-  });
-  return output;
 }
 
 export const sleep = (ms: number) =>

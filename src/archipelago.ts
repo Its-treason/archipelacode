@@ -11,10 +11,15 @@ import {
   Problem,
   State,
   SubProblem,
+  supportedLangSlugs,
   VersionIdentifier,
 } from "./shared";
 import { archipelaCodeTreeDataProvider } from "./treeView/treeDataProvider";
-import { countOccurrences, versionStringToVersion } from "./utils";
+import {
+  countOccurrences,
+  getLanguageOverride,
+  versionStringToVersion,
+} from "./utils";
 
 class ArchipelagoController {
   hostname: string = "archipelago.gg";
@@ -288,6 +293,9 @@ class ArchipelagoController {
 
   getEnabledLanguages(): LangEnable[] {
     let result: LangEnable[] = [];
+    if (!this.slotData) {
+      return result;
+    }
     let metadata = this.slotData.metadata;
     if (metadata && typeof metadata === "object") {
       for (const [key, value] of Object.entries(metadata)) {
@@ -304,6 +312,49 @@ class ArchipelagoController {
       }
     }
     return result;
+  }
+
+  // Whether the slot data actually told us which language the slot uses.
+  // APWorld v0.0.2 and older only ever write "python3" and "javascript" into
+  // `metadata.included_languages`, so a slot generated for Typescript or Golang
+  // reports every language it knows about as disabled.
+  hasReportedLanguages(): boolean {
+    return this.getEnabledLanguages().some((entry) => entry.enabled);
+  }
+
+  isUsingLanguageFallback(): boolean {
+    return getLanguageOverride() === "auto" && !this.hasReportedLanguages();
+  }
+
+  // The language slugs the player may solve problems in. Falls back to the
+  // languages the slot data never mentioned when it reports none as enabled,
+  // since those are exactly the ones an older APWorld is unable to report.
+  getIncludedLangSlugs(): string[] {
+    const override = getLanguageOverride();
+    if (override !== "auto") {
+      return [override];
+    }
+
+    const reported = this.getEnabledLanguages();
+    const enabled = reported
+      .filter((entry) => entry.enabled)
+      .map((entry) => entry.langSlug);
+    if (enabled.length > 0) {
+      return enabled;
+    }
+
+    const unreported = supportedLangSlugs.filter(
+      (langSlug) => !reported.some((entry) => entry.langSlug === langSlug),
+    );
+    const fallback =
+      unreported.length > 0 ? unreported : [...supportedLangSlugs];
+    archipelacodeChannel.appendLine(
+      `Your slot data doesn't report an enabled language. This happens with APWorld v0.0.2 and older when the slot was generated for Typescript or Golang.`,
+    );
+    archipelacodeChannel.appendLine(
+      `Falling back to: ${fallback.join(", ")}. Set "archipelacode.languageOverride" if that's wrong.`,
+    );
+    return fallback;
   }
 
   async getAllLocations(): Promise<Problem[]> {

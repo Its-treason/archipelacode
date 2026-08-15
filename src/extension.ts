@@ -6,6 +6,7 @@ import * as commands from "./commands/commands";
 import { globalState } from "./globalState";
 import { leetCodeController } from "./leetcode";
 import { archipelacodeChannel } from "./outputChannel";
+import { APStatus } from "./shared";
 import { archipelaCodeTreeItemDecorationProvider } from "./treeView/nodeDecorationProvider";
 import { archipelaCodeTreeDataProvider } from "./treeView/treeDataProvider";
 import { ArchipelaCodeTreeViewNode as ArchipelaCodeNode } from "./treeView/treeViewNode";
@@ -38,6 +39,14 @@ export function activate(context: vscode.ExtensionContext) {
       await commands.reconnect();
       await apVerifier.initialize();
       await archipelaCodeTreeDataProvider.refresh();
+    }),
+    vscode.workspace.onDidChangeConfiguration(async (event) => {
+      if (
+        event.affectsConfiguration("archipelacode.languageOverride") &&
+        apController.status === APStatus.CONNECTED
+      ) {
+        await apVerifier.initialize();
+      }
     }),
     vscode.commands.registerCommand("archipelacode.disconnect", async () => {
       await commands.disconnect();

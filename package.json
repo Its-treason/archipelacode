@@ -107,6 +107,26 @@
             ],
             "description": "Endpoint of your LeetCode user account."
           },
+          "archipelacode.languageOverride": {
+            "type": "string",
+            "default": "auto",
+            "scope": "application",
+            "enum": [
+              "auto",
+              "python3",
+              "javascript",
+              "typescript",
+              "golang"
+            ],
+            "enumDescriptions": [
+              "Use the languages reported by your Archipelago slot data.",
+              "Always solve problems in Python3.",
+              "Always solve problems in JavaScript.",
+              "Always solve problems in TypeScript.",
+              "Always solve problems in Go."
+            ],
+            "description": "Overrides the language reported by your Archipelago slot. APWorld v0.0.2 and older don't report Typescript or Golang slots, which leaves the language picker empty - set this to the language you generated with to fix that without regenerating the world."
+          },
           "archipelacode.nodePath": {
             "type": "string",
             "default": "node",

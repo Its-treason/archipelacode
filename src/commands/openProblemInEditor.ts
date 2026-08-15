@@ -21,24 +21,33 @@ export async function openProblemInEditor(node: ArchipelaCodeTreeViewNode) {
       vscode.window.showErrorMessage("No workspace folder open.");
       return;
     }
-    let picks: Array<IQuickItemEx<string>> = [];
-    let includedLangSlugs: string[] = [];
-    apController.getEnabledLanguages().forEach((entry) => {
-      if (entry.enabled) {
-        includedLangSlugs.push(entry.langSlug);
-      }
-    });
-    problem.codeSnippets.forEach((entry) => {
-      if (includedLangSlugs.includes(entry.langSlug)) {
-        picks.push({
-          label: entry.lang,
-          value: entry.langSlug,
-        });
-      }
-    });
+    const includedLangSlugs = apController.getIncludedLangSlugs();
+    const picks: Array<IQuickItemEx<string>> = problem.codeSnippets
+      .filter((entry) => includedLangSlugs.includes(entry.langSlug))
+      .map((entry) => ({
+        label: entry.lang,
+        value: entry.langSlug,
+      }));
+
+    if (picks.length === 0) {
+      const message =
+        `No language to solve "${titleSlug}" in. Your slot allows ` +
+        `[${includedLangSlugs.join(", ")}], but LeetCode only offers ` +
+        `[${problem.codeSnippets.map((entry) => entry.langSlug).join(", ")}] ` +
+        `for this problem. Try setting "archipelacode.languageOverride".`;
+      vscode.window.showErrorMessage(message);
+      archipelacodeChannel.appendLine(message);
+      return;
+    }
 
     const choice: IQuickItemEx<string> | undefined =
-      await vscode.window.showQuickPick(picks);
+      await vscode.window.showQuickPick(picks, {
+        placeHolder: "Select the language to solve this problem in",
+        title:
+          apController.isUsingLanguageFallback() ?
+            "Archipelago didn't report your language - pick the one your slot was generated for"
+          : undefined,
+      });
     if (!choice) {
       return;
     }

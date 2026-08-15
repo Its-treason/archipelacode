@@ -21,15 +21,13 @@ class APVerifier {
 
   public async initialize() {
     this.includedVerifiers = [];
-    let includedLanguages = apController.getEnabledLanguages();
-    for (const language of includedLanguages) {
-      if (language.enabled) {
-        this.languageVerifiers.forEach((verifier) => {
-          if (verifier.langSlugs.includes(language.langSlug)) {
-            this.includedVerifiers.push(verifier);
-          }
-        });
-      }
+    let includedLangSlugs = apController.getIncludedLangSlugs();
+    for (const langSlug of includedLangSlugs) {
+      this.languageVerifiers.forEach((verifier) => {
+        if (verifier.langSlugs.includes(langSlug)) {
+          this.includedVerifiers.push(verifier);
+        }
+      });
     }
     this.includedVerifiers.push(universalVerifier);
   }
