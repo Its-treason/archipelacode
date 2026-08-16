@@ -82,6 +82,20 @@ class ArchipelagoController {
         await archipelaCodeTreeDataProvider.refresh();
       },
     );
+
+    // client.check() only sends the packet; room.checkedLocations is not
+    // updated until the server echoes it back. Refreshing the tree from here
+    // rather than straight after check() is what moves a problem out of
+    // "Available" once the check actually lands.
+    this.client.room.on("locationsChecked", async (locations: number[]) => {
+      archipelacodeChannel.appendLine(
+        `Locations checked: ${locations.join(", ")}`,
+      );
+      if (this.client.room.checkedLocations.length >= this.getEndGoal()) {
+        this.client.goal();
+      }
+      await archipelaCodeTreeDataProvider.refresh();
+    });
     try {
       if (!this.password) {
         await this.client.login(this.getUrl(), this.slotname, "ArchipelaCode");
@@ -196,11 +210,10 @@ class ArchipelagoController {
     archipelacodeChannel.appendLine(
       `Sending check for location '${locationID}'`,
     );
+    // The goal check and the tree refresh both happen in the "locationsChecked"
+    // handler, once the server has confirmed the check and room.checkedLocations
+    // actually reflects it.
     await this.client.check(locationID);
-    if (this.client.room.checkedLocations.length + 1 >= this.getEndGoal()) {
-      this.client.goal();
-    }
-    await archipelaCodeTreeDataProvider.refresh();
   }
 
   titleSlugToLocationId(titleSlug: string): number {
